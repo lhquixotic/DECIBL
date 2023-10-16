@@ -4,7 +4,6 @@ import torch.nn as nn
 from typing import List
 from torch.utils.data import DataLoader
 import numpy as np
-import matplotlib.pyplot as plt
 
 from DECIBL.metrics import *
 
@@ -19,21 +18,6 @@ def reset_frozen_gradients(network):
 
 def get_device() -> str:
     return 'cuda' if torch.cuda.is_available() else 'cpu'
-
-def test(network, data_loader: DataLoader, classes_in_this_experience: List, args:Namespace, report = False) -> float:
-    network.eval()
-    error_sum = 0
-    # TODO: how to represent the error sum
-    with torch.no_grad():
-        for count, case in enumerate(data_loader):
-            if count >= args.max_test_cases_num:
-                break
-            case_ade, case_fde = eval_case(case,network)
-            error_sum += case_ade/min(args.max_test_cases_num,len(data_loader))
-            
-    if report:
-        print("Error sum = ", error_sum)
-    return error_sum
 
 def task_val(network,val_loader, args):
     network.eval()
@@ -59,19 +43,9 @@ def task_val(network,val_loader, args):
     return loss_batch / (case_id+1)
 
 def task_train(network, optimizer, train_loader: DataLoader, args: Namespace):
-    # training for single epoch
-    # for ep_id in range(args.phase_epochs):
-    # Training
     is_1st_loss = True
     loss_batch = 0
     network.train()
-    
-    # Set previous columns as eval model
-    # for i in range(len(network.columns)-1):
-    #     # network.columns[i].eval()
-    #     for module in network.columns[i].modules():
-    #         if isinstance(module, nn.BatchNorm2d):
-    #             module.eval()
     
     for count, case in enumerate(train_loader):
         if count >= args.max_train_cases_num: # max train case
@@ -98,14 +72,6 @@ def task_train(network, optimizer, train_loader: DataLoader, args: Namespace):
             loss_batch += graph_loss.item()
 
     train_loss = loss_batch / (count+1)
-        
-        # print("Epoch {}: graph loss is {}".format(ep_id, graph_loss.data.item()))
-                #TODO: add metrics
-                
-                #
-                # if network.freeze_masks:
-                #     network = reset_frozen_gradients(network)
-                # optimizer.step()
 
     return network, train_loss
 

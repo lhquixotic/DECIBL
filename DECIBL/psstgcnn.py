@@ -13,6 +13,9 @@ import copy
 
 import torch.optim as optim
 
+def get_device() -> str:
+    return 'cuda' if torch.cuda.is_available() else 'cpu'
+
 class ConvTemporalGraphical(nn.Module):
     #Source : https://github.com/yysijie/st-gcn/blob/master/net/st_gcn.py
     r"""The basic module for applying a graph convolution.
@@ -283,10 +286,10 @@ class progressive_social_stgcnn(nn.Module):
             out = []
             for col_id, col in enumerate(self.columns): 
                 if l == 1: # 1st layer of tpcnn
-                    layer_out = col[l](inputs[:col_id+1], activation=nn.PReLU().to('cuda:0'))
+                    layer_out = col[l](inputs[:col_id+1], activation=nn.PReLU().to(get_device()))
                     out.append(layer_out)
                 elif l < self.block_number - 1: # tpcnn out before the output layer
-                    layer_out = col[l](inputs[:col_id+1], activation=nn.PReLU().to('cuda:0')) + inputs[col_id]
+                    layer_out = col[l](inputs[:col_id+1], activation=nn.PReLU().to(get_device())) + inputs[col_id]
                     out.append(layer_out)
                 elif l == self.block_number - 1:
                     layer_out = col[l](inputs[:col_id+1])

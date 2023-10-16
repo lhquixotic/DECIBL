@@ -19,8 +19,6 @@ import networkx as nx
 
 import torch.distributions.multivariate_normal as torchdist
 
-
-
 def ade(predAll,targetAll,count_):
     All = len(predAll)
     sum_all = 0 

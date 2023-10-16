@@ -20,14 +20,12 @@ def get_data_loaders(args: Namespace, train_task, val_task, test_task) -> Tuple[
 
 class Learner():
 
-    def __init__(self, args: Namespace, network, scenario, log_params: dict) -> None:
+    def __init__(self, args: Namespace, network, scenario) -> None:
         self.args = args
         self.optim_obj = getattr(torch.optim, args.optimizer)
         self.network = network.to(get_device())
 
         self.original_scenario = scenario
-
-        self.log_params = log_params
 
         self.metrics = {'train_loss':[], 'val_loss':[]}
         self.constant_metrics = {'min_val_epoch':[], 'min_val_loss':[]}
@@ -42,15 +40,15 @@ class Learner():
                                                                            self.original_scenario.test_stream)):
             task_index = task_index + self.args.start_task
             
-            print("*"*30+"Preparing task"+str(task_index)+" "+"*"*30)
+            print("*"*30+" Preparing task"+str(task_index)+" "+"*"*30)
             
-            self.ckpt_path = "./logs/{}/checkpoint/val_best_model_{}.pth".format(self.args.run_tag,task_index)
+            self.ckpt_path = "./logs/{}/checkpoint/val_best_model_{}.pth".format(self.args.experiment_name,task_index)
             
             # Before training, load the network as current knowledge
             self.load_existing_knowledge(task_index)
             
             # Create dir for saving results
-            save_dir = "./logs/{}/evaluation/columns_{}/".format(self.args.run_tag,len(self.network.columns))
+            save_dir = "./logs/{}/evaluation/columns_{}/".format(self.args.experiment_name,len(self.network.columns))
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             
@@ -95,7 +93,6 @@ class Learner():
             
             # Save ckpt
             self.store_checkpoint(self.network, self.network.batch_norm_para, self.network.expert_selector)
-            print("save checkpoint, including model state dict, bn para and expert selector")
             
             # test the performance of current model on previous tasks
             for id, task in enumerate(self.original_scenario.test_stream): # test all tasks using task-specific expert
@@ -103,14 +100,14 @@ class Learner():
                 if task_id > task_index:
                     break
                 expert_id = self.network.select_expert(task_id)
-                if (expert_id,task_id) in expert_res.keys():
-                    print("(expert_{},task_{}) has been tested". format(expert_id,task_id))
-                else:
+                if not (expert_id,task_id) in expert_res.keys():
                     ade, fde = self.test_given_task(task_id, expert_id=expert_id, save_dir=save_dir)
-                    expert_res[(task_id, expert_id)] = [ade.mean(), fde.mean()] # TODO: check if there is overlap
-                
+                    expert_res[(task_id, expert_id)] = [ade.mean(), fde.mean()]
+                # else:
+                    # print("(expert_{},task_{}) has been tested". format(expert_id,task_id))
+                    
             # save the performance
-            with open("./logs/{}/evaluation/expert_performance.txt".format(self.args.run_tag),"w") as file:
+            with open("./logs/{}/evaluation/expert_performance.txt".format(self.args.experiment_name),"w") as file:
                 current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 file.write(f"Time:{current_time}\n")
                 for key, value in expert_res.items():
@@ -126,7 +123,7 @@ class Learner():
             self.network.new_task()
         else:
             # Load checkpoint to load previous knowledge, including model paras, expert selector, and bn paras
-            ckpt_path = "./logs/{}/checkpoint/val_best_model_{}.pth".format(self.args.run_tag,task_index-1)
+            ckpt_path = "./logs/{}/checkpoint/val_best_model_{}.pth".format(self.args.experiment_name,task_index-1)
             if os.path.exists(ckpt_path):
                 print("Load existing model knowledge: {}".format(ckpt_path))
             checkpoint = torch.load(ckpt_path)
@@ -164,7 +161,7 @@ class Learner():
                     np.save(save_dir+"ADE-task-{}-exp-{}.npy".format(test_task_id,expert_id),ade)
                     np.save(save_dir+"FDE-task-{}-exp-{}.npy".format(test_task_id,expert_id),fde)
                     
-                    print("[Test] columns num:{}, test_task_id:{}, expert_id:{}, ADE:{:.2f}, fde:{:.2f}".format(
+                    print("[Test] columns num:{}, task_{}, expert_{}, ADE:{:.2f}, fde:{:.2f}".format(
                         len(self.network.columns), test_task_id, expert_id, ade.mean(), fde.mean()))
                 return ade, fde
         return None,None
@@ -200,9 +197,9 @@ class Learner():
         # Save the training loss
         np_val_loss = np.array(self.metrics['val_loss'])
         np_tra_loss = np.array(self.metrics['train_loss'])
-        np.save("./logs/{}/loss/val_task_{}.npy".format(self.args.run_tag,task_index),np_val_loss)
-        np.save("./logs/{}/loss/train_task_{}.npy".format(self.args.run_tag,task_index),np_tra_loss)
-        with open("./logs/{}/loss/constant_metrics.txt".format(self.args.run_tag),"a") as file:
+        np.save("./logs/{}/loss/val_task_{}.npy".format(self.args.experiment_name,task_index),np_val_loss)
+        np.save("./logs/{}/loss/train_task_{}.npy".format(self.args.experiment_name,task_index),np_tra_loss)
+        with open("./logs/{}/loss/constant_metrics.txt".format(self.args.experiment_name),"a") as file:
             file.write(f"[Task-{task_index}] Best model trained in epoch {self.constant_metrics['min_val_epoch']}, loss is {self.constant_metrics['min_val_loss']}\n")    
     
         return self.network
