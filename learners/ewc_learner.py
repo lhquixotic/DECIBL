@@ -4,17 +4,17 @@ import logging
 import copy
 import numpy as np
 
-import torch
+import torch 
 import torch.nn as nn
 
 from learners.learner import Learner
-from utils.gsm import gsm_task_train
-from utils.utils import load_memory_data, save_memory_data, get_dataloader, get_device
-from utils.train_eval import task_val, task_test_with_given_expert
+from utils.ewc import EWC, ewc_task_train
+from utils.utils import load_memory_data, save_memory_data, get_dataloader,get_device
+from utils.train_eval import task_val, task_test_with_given_expert, task_train
 
-class GSMLearner(Learner): 
+class EWCLearner(Learner):
     def __init__(self, model, scenarios, args: Namespace) -> None:
-        super(GSMLearner,self).__init__(model, scenarios, args)
+        super(EWCLearner,self).__init__(model, scenarios, args)
         
         self.mem_size = args.mem_size
         self.pre_mem_data = None
@@ -27,16 +27,17 @@ class GSMLearner(Learner):
     def before_task_learning(self, tid):
         if tid > 0:
             # load memory data
-            self.pre_mem_data = load_memory_data(tid, self.mem_path, self.args)
+            self.pre_mem_data = load_memory_data(tid,self.mem_path, self.args)
+            assert self.pre_mem_data is not None
             # load existing model state dict
             self.load_previous_knowledge(tid)
-        
+    
     def task_learning(self, tid, train_task, val_task):
         # store memory of current task 
         save_memory_data(tid, train_task, self.mem_path, self.args)
         # learn current task
-        self.gsm_task_learning(tid, train_task, val_task)
-    
+        self.ewc_task_learning(tid, train_task, val_task)
+        
     def after_task_learning(self, tid):
         # load best model
         self.load_best_model()
@@ -54,17 +55,12 @@ class GSMLearner(Learner):
             logging.info("[Test] columns num:{}, task_{}, expert_{}, ADE:{:.2f}, fde:{:.2f}".format(
                 len(self.model.columns), id, eid, ade.mean(), fde.mean()))
             res[(eid,id)] = [ade.mean(), fde.mean()]
-    
-    def gsm_task_learning(self, tid, train_task, val_task):
+        
+    def ewc_task_learning(self, tid, train_task, val_task):
         self.model = self.model.to(get_device())
         # get dataloaders
         train_loader = get_dataloader(train_task,shuffle=True)
         val_loader = get_dataloader(val_task, shuffle=True)
-        ''' load memory data '''
-        if self.pre_mem_data is not None:
-            mem_loader = get_dataloader(self.pre_mem_data, shuffle=False)
-        else:
-            mem_loader = None
         
         # initialize the metrics container
         self.metrics['train_loss'] = []
@@ -77,25 +73,19 @@ class GSMLearner(Learner):
         if self.args.use_lrschd:
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.args.lr_sh_rate, gamma=0.2)
         
-        ''' calculate each params' elements number ''' 
-        grad_elements_num = []
-        cnt = 1
-        for name, param in self.model.named_parameters():
-            if cnt == 23 or cnt == 24 or cnt == 31:
-                continue
-            grad_elements_num.append(param.data.numel())
-            cnt+=1
-        # logging.info("grad_elements_num is {}".format(grad_elements_num))
-
         for ep_id in range(self.args.num_epochs):
             # training
-            self.model, train_loss = gsm_task_train(self.model, optimizer, train_loader, mem_loader, 
-                                                    tid, grad_elements_num, self.args)
+            if tid == 0:
+                self.model, train_loss = task_train(self.model,optimizer,train_loader,self.args)
+            else: 
+                ''' EWC learning process ''' 
+                assert self.pre_mem_data is not None
+                self.model, train_loss = ewc_task_train(self.model,optimizer,train_loader, EWC(self.model, self.pre_mem_data), self.args)
+    
             self.metrics['train_loss'].append(train_loss)
             # validating
-            val_loss = task_val(self.model, val_loader, self.args)
+            val_loss = task_val(self.model,val_loader,self.args)
             self.metrics['val_loss'].append(val_loss)
-                    
             # store best model and extra information
             if torch.isnan(torch.tensor(train_loss)).any():
                 logging.warning("[Loss] Train loss contains NaN values.")
@@ -126,4 +116,5 @@ class GSMLearner(Learner):
             np.save(self.root_path+"/loss/train_task_{}.npy".format(tid),np_tra_loss)
             with open(self.root_path+"/loss/constant_metrics.txt","a") as file:
                 file.write(f"[Task-{tid}] Best model trained in epoch {self.constant_metrics['min_val_epoch']}, loss is {self.constant_metrics['min_val_loss']}\n")    
-           
+            
+        

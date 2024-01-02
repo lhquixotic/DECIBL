@@ -1,54 +1,11 @@
 import numpy as np
-import pickle
-import os
 import quadprog
 
 import torch
-from torch.utils.data import ConcatDataset,random_split, DataLoader
 
 from utils.utils import get_device
 from utils.train_eval import get_graph_loss
 
-# def load_memory_data(cur_tid, args):
-#     if cur_tid <= 0:
-#         return None
-#     else:
-#         mem_data = []
-#     ave_mem = int(args.mem_size/task_id)
-#     # load 
-#     for tid in range(cur_tid):
-#         mem_tid = np.load() #TODO shape: size, case_shape
-#         assert len(mem_tid) > ave_mem
-#         used_mem = torch.from_numpy(mem_tid[:ave_mem,:]).to(get_device())
-        
-#         mem_data.append(used_mem)
-#     return mem_data
-
-def load_memory_data(cur_tid, memory_path, args):
-    if cur_tid <= 0:
-        return None
-    else:
-        mem_lists = []
-        ave_mem = int(args.mem_size/cur_tid)
-        for tid in range(cur_tid):
-            pre_mem_fname = memory_path+'/task_{}.pkl'.format(tid)
-            assert os.path.exists(pre_mem_fname)
-            with open(pre_mem_fname, "rb") as file:
-                pre_mem = pickle.load(file)
-            split_sizes = [ave_mem, len(pre_mem) - ave_mem]
-            mem_lists.append(random_split(pre_mem,split_sizes)[0])
-        return ConcatDataset(mem_lists)
-
-def save_memory_data(cur_id, train_task, memory_path, args):
-    print("train_task_len:",len(train_task.dataset))
-    assert len(train_task.dataset) >= args.mem_size
-    assert os.path.exists(memory_path)
-    split_sizes = [args.mem_size, len(train_task.dataset) - args.mem_size]
-    memorized_data = random_split(train_task.dataset, split_sizes)
-    memorized_data = memorized_data[0]
-    mem_data_fname = memory_path + "/task_{}.pkl".format(cur_id)
-    with open(mem_data_fname, "wb") as file:
-        pickle.dump(memorized_data, file)
 
 def gsm_task_train(model, optimizer, train_loader, mem_loader, 
                    cur_tid, grad_elem_num, args):
@@ -59,10 +16,9 @@ def gsm_task_train(model, optimizer, train_loader, mem_loader,
     loss_batch = 0
     model.train()
     
-    
     for count, case in enumerate(train_loader):
         '''For previous task'''
-        if mem_loader is not None:
+        if mem_loader is not None and count % args.batch_size == 0:
             ave_mem = int(args.mem_size / cur_tid)
             grad_mat = torch.zeros((sum(grad_elem_num),cur_tid+1)).cuda()
             grad_mat.data.fill_(0.0)
@@ -103,6 +59,7 @@ def gsm_task_train(model, optimizer, train_loader, mem_loader,
                             grad_mat[stpt:endpt, pre_task_id].data.copy_(
                                 params.grad.data.view(-1))
                             j+=1
+        
         '''For current task'''
         case = [tensor.to(get_device()) for tensor in case]
         optimizer.zero_grad()
@@ -113,7 +70,7 @@ def gsm_task_train(model, optimizer, train_loader, mem_loader,
         else:
             loss += l
         
-        if (count+1) % args.batch_size == 0:
+        if (count+1) % args.batch_size == 0: # get a minibatch data-
             loss = loss/args.batch_size
             is_1st_loss = True
             loss.backward()

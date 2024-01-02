@@ -29,14 +29,16 @@ color_dict = {
               "GSM":rgb_to_hex([170,220,224]),
               "PNN":rgb_to_hex([239,138,71]),
               "Joint":rgb_to_hex([231,98,84]),
-              "DEM":rgb_to_hex([30,70,110])}
+              "DEM":rgb_to_hex([30,70,110]),
+              "EWC":rgb_to_hex([82,143,173])}
 
 marker_dict = {"Multiple": '.',
               "Vanilla":'.',
               "GSM":'.',
               "PNN":'.',
               "Joint":'.',
-              "DEM":'^'}
+              "DEM":'^',
+              "EWC":''}
 
 # expert selector
 def get_expert_dict(task_id, method_name, experiment_name):
@@ -128,71 +130,78 @@ def visualize_result(data_dict:dict, axes, save_fig=False):
         print(key,dataset_mean)
     
 
-
-methods_zoo = {"Vanilla": "experiment-1",
-              "Multiple": "experiment-1",
-              "Joint":    "experiment-1",
-              "PNN":      "experiment-1",
-              "DEM":      "experiment-3"}
+methods_zoo = {"Vanilla": "experiment-3",
+              "Multiple": "experiment",
+              "Joint":    "experiment",
+              "PNN":      "experiment",
+              "DEM":      "experiment-3",
+            #   "GSM":      "experiment-1",
+              "EWC":      "experiment-2"}
 
 scenario_list = ["MA","FT","ZS", "EP", "SR"]
 
+plot_str_tid = 0
+plot_end_tid = 9
 
-# # 1. Plot ADE (Evaluation on current dataset) 
-# res_ade_dict = dict()
-# res_fde_dict = dict()
-# for method, experiment_name in methods_zoo.items():
-#     ade_data, fde_data = load_result_data(0,9,method,experiment_name)  
-#     res_ade_dict[method] = ade_data
-#     res_fde_dict[method] = fde_data
 
-# plt.rcParams["axes.edgecolor"] = 'gray'
-# fig, axs = plt.subplots(figsize=(12,5))
-# axs.axvspan(0.5,5.5,alpha=0.5,color='lightblue')
-# axs.axvspan(5.5,10.5,alpha=0.5,color='lightyellow')
-# axs.axvline(5.5,color="white",linewidth=1)
-
-# visualize_result(res_ade_dict, axs) 
-
-# axs.set_xlabel("Trained dataset index")
-# axs.set_ylabel("Test Error (ADE)")
-# axs.set_xlim(0.5,10.5)
-# axs.set_xticks(range(1,11))
-# axs.set_xticklabels([s+ "-0" for s in scenario_list] + [s+"-1" for s in scenario_list])
-# axs.legend(loc='upper center',bbox_to_anchor=(0.5,1.15), ncol=5)   
-# axs.grid(color='gray',linewidth=0.3)
-# plt.tight_layout()
-# plt.savefig("./results/figs/current-ade-10-tasks.png",dpi=600)
-# plt.show()
-
-# # 2. Plot FDE (evaluation on current dataset)
-# fig, axs = plt.subplots(figsize=(12,5))
-# axs.axvspan(0.5,5.5,alpha=0.5,color='lightblue')
-# axs.axvspan(5.5,10.5,alpha=0.5,color='lightyellow')
-# axs.axvline(5.5,color="white",linewidth=1)
-
-# visualize_result(res_fde_dict, axs) 
-
-# axs.set_xlabel("Trained dataset index")
-# axs.set_ylabel("Test Error (FDE)")
-# axs.set_xlim(0.5,10.5)
-# axs.set_xticks(range(1,11))
-# axs.set_xticklabels([s+ "-0" for s in scenario_list] + [s+"-1" for s in scenario_list])
-# axs.legend(loc='upper center',bbox_to_anchor=(0.5,1.15), ncol=5)   
-# axs.grid(color='gray',linewidth=0.3)
-# plt.tight_layout()
-# plt.savefig("./results/figs/current-fde-10-tasks.png",dpi=600)
-# plt.show()
-
-# 3. Plot ADE (evaluation on MA-0)
-methods_zoo = {"Vanilla": "experiment-1",
-              "Joint":    "experiment-1",
-              "PNN":      "experiment-1",
-              "DEM":      "experiment-3"}
+# 1. Plot ADE (Evaluation on current dataset) 
 res_ade_dict = dict()
 res_fde_dict = dict()
 for method, experiment_name in methods_zoo.items():
-    ade_data, fde_data = load_result_data(0,9,method,experiment_name,given_tid=0)  
+    ade_data, fde_data = load_result_data(plot_str_tid,plot_end_tid,method,experiment_name)  
+    res_ade_dict[method] = ade_data
+    res_fde_dict[method] = fde_data
+
+plt.rcParams["axes.edgecolor"] = 'gray'
+fig, axs = plt.subplots(figsize=(12,5))
+axs.axvspan(0.5,5.5,alpha=0.5,color='lightblue')
+axs.axvspan(5.5,10.5,alpha=0.5,color='lightyellow')
+axs.axvline(5.5,color="white",linewidth=1)
+
+visualize_result(res_ade_dict, axs) 
+
+axs.set_xlabel("Trained dataset index")
+axs.set_ylabel("Test Error (ADE)")
+axs.set_xlim(0.5,10.5)
+axs.set_xticks(range(1,11))
+axs.set_xticklabels([s+ "-0" for s in scenario_list] + [s+"-1" for s in scenario_list])
+axs.legend(loc='upper center',bbox_to_anchor=(0.5,1.15), ncol=5)   
+axs.grid(color='gray',linewidth=0.3)
+plt.tight_layout()
+plt.savefig("./results/figs/current-ade-10-tasks.png",dpi=600)
+plt.show()
+
+# 2. Plot FDE (evaluation on current dataset)
+fig, axs = plt.subplots(figsize=(12,5))
+axs.axvspan(0.5,5.5,alpha=0.5,color='lightblue')
+axs.axvspan(5.5,10.5,alpha=0.5,color='lightyellow')
+axs.axvline(5.5,color="white",linewidth=1)
+
+visualize_result(res_fde_dict, axs) 
+
+axs.set_xlabel("Trained dataset index")
+axs.set_ylabel("Test Error (FDE)")
+axs.set_xlim(0.5,10.5)
+axs.set_xticks(range(1,11))
+axs.set_xticklabels([s+ "-0" for s in scenario_list] + [s+"-1" for s in scenario_list])
+axs.legend(loc='upper center',bbox_to_anchor=(0.5,1.15), ncol=5)   
+axs.grid(color='gray',linewidth=0.3)
+plt.tight_layout()
+plt.savefig("./results/figs/current-fde-10-tasks.png",dpi=600)
+plt.show()
+
+# 3. Plot ADE (evaluation on MA-0)
+methods_zoo = {"Vanilla": "experiment-3",
+              "Joint":    "experiment",
+              "PNN":      "experiment",
+              "DEM":      "experiment-3",
+            #   "GSM":      "experiment-1",
+              "EWC":      "experiment-2"}
+
+res_ade_dict = dict()
+res_fde_dict = dict()
+for method, experiment_name in methods_zoo.items():
+    ade_data, fde_data = load_result_data(plot_str_tid,plot_end_tid,method,experiment_name,given_tid=0)  
     res_ade_dict[method] = ade_data
     res_fde_dict[method] = fde_data
 
@@ -215,7 +224,7 @@ plt.tight_layout()
 plt.savefig("./results/figs/task1-ade-10-tasks.png",dpi=600)
 plt.show()
 
-# 4. 
+# 4. Plot FDE (evaluation on MA-0)
 fig, axs = plt.subplots(figsize=(12,5))
 axs.axvspan(0.5,5.5,alpha=0.5,color='lightblue')
 axs.axvspan(5.5,10.5,alpha=0.5,color='lightyellow')
@@ -233,3 +242,37 @@ axs.grid(color='gray',linewidth=0.3)
 plt.tight_layout()
 plt.savefig("./results/figs/task1-fde-10-tasks.png",dpi=600)
 plt.show()
+
+# # 5. Compare the usage of storage
+# methods_zoo = {"Vanilla": "experiment",
+#               "Multiple": "experiment",
+#               "PNN":      "experiment",
+#               "DEM":      "experiment-3",
+#               "GSM":      "experiment-1"}
+
+# def get_file_size(filepath):
+#     return os.path.getsize(filepath)
+
+# def get_storage_results(start_tid, end_tid, method_name, experiment_name): 
+#     storage_results = [] # list(storage_size): storage used after each task
+#     for tid in range(start_tid,end_tid):
+#         ckpt_file_name = f"./logs/{method_name}/{experiment_name}/checkpoint/checkpoint_task_{tid}.pth"
+#         file_size = get_file_size(ckpt_file_name)
+#         if method_name in ["GSM"]:
+#             mem_file_name =  f"./logs/{method_name}/{experiment_name}/memory/mem_3500/task_{tid}.pkl"
+#             mem_size = get_file_size(mem_file_name)
+#             file_size += mem_size
+#         storage_results.append(file_size/1000)
+#     return storage_results
+
+# storage_res = []
+# storage_final = {}
+# for method, exp_name in methods_zoo.items():
+#     storage_used = get_storage_results(plot_str_tid,plot_end_tid,method,exp_name)
+#     storage_res.append(storage_used)
+#     storage_final[method] = storage_used[-1]
+# #     plt.plot(range(plot_end_tid-plot_str_tid),storage_used)
+# # plt.show()
+
+# # print final storage sizes
+# print(storage_final)

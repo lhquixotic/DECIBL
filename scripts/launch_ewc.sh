@@ -1,8 +1,7 @@
 #！/bin/sh
 task_seq="1-2-3-4-5"
-train_method="DEM"
-experiment_name="experiment-4"
-expand_thres="0.1"
+train_method="EWC"
+experiment_name="experiment-2"
 
 python launch.py --train_method $train_method\
                  --experiment_name $experiment_name\
@@ -20,4 +19,5 @@ python launch.py --train_method $train_method\
                  --lr_sh_rate 100\
                  --learning_rate 0.01\
                  --clip_grad 1.0\
-                 --expand_thres $expand_thres
+                 --mem_size 3500\
+                 --ewc_importance 10

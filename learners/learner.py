@@ -35,7 +35,11 @@ class Learner():
         for tid, (train_task, val_task, test_task) in enumerate(zip(self.scenarios.train_stream,
                                                                     self.scenarios.val_stream,
                                                                     self.scenarios.test_stream)):
-            tid += self.args.train_start_task
+            if train_task.task_id < self.args.train_start_task:
+                continue
+            assert tid >= self.args.train_start_task
+            
+            # tid += self.args.train_start_task
             # Create checkpoint and evaluation path
             self.root_path = f"./logs/{self.args.train_method}/{self.args.experiment_name}"
             self.ckpt_fname = self.root_path+"/checkpoint/checkpoint_task_{}.pth".format(tid)

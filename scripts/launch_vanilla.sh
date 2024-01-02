@@ -1,12 +1,12 @@
 #！/bin/sh
 task_seq="1-2-3-4-5"
 train_method="Vanilla"
-experiment_name="experiment-1"
+experiment_name="experiment-3"
 
 python launch.py --train_method $train_method\
                  --experiment_name $experiment_name\
                  --is_demo 0\
-                 --train_start_task 1\
+                 --train_start_task 0\
                  --test_start_task 0\
                  --task_seq $task_seq\
                  --batch_size 64\

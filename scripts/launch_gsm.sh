@@ -1,7 +1,7 @@
 #！/bin/sh
 task_seq="1-2-3-4-5"
 train_method="GSM"
-experiment_name="experiment-1"
+experiment_name="experiment-3"
 
 python launch.py --train_method $train_method\
                  --experiment_name $experiment_name\

@@ -62,6 +62,9 @@ def get_argument_parser() -> argparse.Namespace:
     parser.add_argument('--margin', type=float, default=0.5,help='for quadprog computing')
     parser.add_argument('--eps', type=float, default=0.001,help='for quadprog computing too')
 
+    # EWC parameters
+    parser.add_argument('--ewc_importance', type=float, default=1000)
+
     # Test parameters
     parser.add_argument('--test_times', type=int, default=3)
     parser.add_argument('--test_case_num', type=int, default=10)

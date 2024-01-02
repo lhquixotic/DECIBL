@@ -1,4 +1,3 @@
 easydict
-tqdm
 networkx
 quadprog=0.1.11

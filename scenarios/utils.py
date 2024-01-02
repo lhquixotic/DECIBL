@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from torch.utils.data import Dataset
 import networkx as nx
-from tqdm import tqdm
+# from tqdm import tqdm
 
 def anorm(p1,p2): 
     NORM = math.sqrt((p1[0]-p2[0])**2+ (p1[1]-p2[1])**2)
@@ -183,9 +183,9 @@ class TrajectoryDataset(Dataset):
         self.v_pred = [] 
         self.A_pred = [] 
         print("Processing Data .....")
-        pbar = tqdm(total=len(self.seq_start_end)) 
+        # pbar = tqdm(total=len(self.seq_start_end)) 
         for ss in range(len(self.seq_start_end)):
-            pbar.update(1)
+            # pbar.update(1)
 
             start, end = self.seq_start_end[ss]
 
@@ -195,7 +195,7 @@ class TrajectoryDataset(Dataset):
             v_,a_=seq_to_graph(self.pred_traj[start:end,:],self.pred_traj_rel[start:end, :],self.norm_lap_matr)
             self.v_pred.append(v_.clone())
             self.A_pred.append(a_.clone())
-        pbar.close()
+        # pbar.close()
 
     def __len__(self):
         return self.num_seq
